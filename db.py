@@ -1,12 +1,17 @@
 import os
 
 import boto3
+from datetime import datetime, timedelta
+
+import pytz
 
 
 class dbLayer():
     def __init__(self):
         dynamo = boto3.resource("dynamodb")
         self.table = dynamo.Table(os.environ['ORDER_TABLE'])
+        self.clear_hour = int(os.environ['CLEAR_HOUR'])
+        self.local_timezone = pytz.timezone('Europe/Paris')
 
     def _key(self, team_id, user_id):
         return {'team_id': team_id, 'user_id': user_id}
@@ -75,13 +80,22 @@ class dbLayer():
             dish = {'dish_type': dish_type, 'dish_name': dish_name}
             new_dishes.append(dish)
 
+        tomorrow = datetime.utcnow() + timedelta(days=1)
+
+        ttl_ts = int(tomorrow\
+            .astimezone(self.local_timezone)\
+            .replace(hour=self.clear_hour, minute=0, second=0, microsecond=0)\
+            .astimezone(pytz.utc)\
+            .timestamp())
+
         result = self.table.update_item(
             Key=self._key(team_id, user_id),
-            UpdateExpression="SET dishes = list_append(if_not_exists(dishes, :empty_list), :new_dishes), user_name = :user_name",
+            UpdateExpression='SET dishes = list_append(if_not_exists(dishes, :empty_list), :new_dishes), user_name = :user_name, ttl_ts = :ttl_ts',
             ExpressionAttributeValues={
                 ':empty_list': [],
                 ':new_dishes': new_dishes,
-                ':user_name': user_name
+                ':user_name': user_name,
+                ':ttl_ts': ttl_ts
             },
             ReturnValues='NONE',
         )

@@ -1,3 +1,4 @@
+import html
 import json
 from urllib.parse import parse_qs
 
@@ -66,11 +67,11 @@ class CommandParser():
             if callback_action_name == CallbackAction.selected_dish:
                 data = self.db_layer.get_user_item(self.team_id, self.user_id)
 
-                selected_dish = self.callback_action['selected_options'][0]['value']
+                selected_dish = html.unescape(self.callback_action['selected_options'][0]['value'])
                 callback_response_body = self.response_layer.edit_response(data, selected_dish)
 
             elif callback_action_name == CallbackAction.remove:
-                selected_dish = self.callback_action['value']
+                selected_dish = html.unescape(self.callback_action['value'])
                 self.db_layer.remove_dish(self.team_id, self.user_id, selected_dish)
 
                 data = self.db_layer.get_user_item(self.team_id, self.user_id)

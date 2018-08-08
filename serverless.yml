@@ -7,6 +7,7 @@ provider:
   runtime: python3.6
   environment:
     ORDER_TABLE: ${self:service}-db-${opt:stage, self:provider.stage}
+    CLEAR_HOUR: '14'
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -64,3 +65,6 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.ORDER_TABLE}
+        TimeToLiveSpecification:
+            AttributeName: ttl_ts
+            Enabled: true
